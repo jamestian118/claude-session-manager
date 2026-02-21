@@ -1,0 +1,7 @@
+# CSM Graphiti MCP — 使用 Graphiti 官方 MCP Server + FalkorDB
+# 实际部署在 $HOME/Documents/Code/graphiti/mcp_server/
+# 启动命令: cd $HOME/Documents/Code/graphiti/mcp_server && docker compose -f docker/docker-compose-falkordb.yml up -d
+# MCP 端点: http://localhost:8000/mcp/
+# FalkorDB UI: http://localhost:3000/
+
+# 本文件仅作参考，实际使用 Graphiti 官方仓库的 compose 文件。
