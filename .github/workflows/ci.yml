@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          python -m pip install ruff
+
+      - name: py_compile
+        run: python -m py_compile csm.py lib/*.py lib/providers/*.py
+
+      - name: ruff
+        run: ruff check .
+
+      - name: pytest
+        run: |
+          pytest -q tests \
+            --cov=lib.store \
+            --cov=lib.session_flags \
+            --cov=lib.utils \
+            --cov=lib.local_memory \
+            --cov-report=term-missing \
+            --cov-fail-under=60

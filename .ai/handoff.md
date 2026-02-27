@@ -501,3 +501,67 @@ PY
 ## 下一步：[可选人工 smoke：`python3 csm.py list --limit 3`、`python3 csm.py list --json --limit 2`、TUI 进入 detail 后 q 返回确认缓存清空]
 
 ## 已知问题：[无阻塞；ANSI 颜色仅在 TTY 生效，符合 NO_COLOR/非 TTY 约定]
+
+## 2026-02-27 Phase 7 CSM lane（7.2 / 7.6 / 7.10）✅
+
+### Goal / DoD
+- 7.2: 新增 CI workflow，覆盖 `py_compile + ruff + pytest`。
+- 7.6: 在项目 `AGENTS.md` 补齐与全局一致的 policy-stack strict 引用。
+- 7.10: 对 CSM 侧硬编码路径做最小参数化，保持默认行为不变。
+
+### Repo State
+- branch: `ai/20260227-phase0-upgrade`
+- scope: `/Users/Zhuanz/Documents/Code/claude-session-manager`
+- key files:
+  - `.github/workflows/ci.yml`
+  - `AGENTS.md`
+  - `lib/integration.py`
+
+### Change Summary
+1. CI workflow
+- 新增 `.github/workflows/ci.yml`，在 GitHub Actions 中依次执行：
+  - `python -m py_compile csm.py lib/*.py lib/providers/*.py`
+  - `ruff check .`
+  - `pytest -q tests --cov=... --cov-fail-under=60`
+
+2. AGENTS policy-stack 引用
+- 在项目 `AGENTS.md` 增加 `Policy Stack` 小节。
+- 明确 strict 入口命令与顺序：
+  - `/Users/Zhuanz/Documents/Code/universal-harness-kit/scripts/agent-policy-stack --tool codex --cwd "$PWD" --strict --strict-profile harness`
+  - `Global -> Workflow -> Copy-to-project`
+- 明确 `fail` 不可跳过。
+
+3. 硬编码路径参数化（最小必要）
+- `lib/integration.py` 新增 `_default_handoff_watcher_script()`：
+  - 支持 `CSM_HANDOFF_WATCHER_SCRIPT` 覆盖。
+  - 默认值改为按 `Path.home()` 计算 `~/Library/Application Support/cli-handoff-bundle/bin/ai_handoff_watch.py`。
+- `_missing_snapshot_message()` 由固定 `/Users/Zhuanz/...` 改为使用上述解析路径；默认行为不变，仅移除用户名硬编码。
+
+### Verification（命令 + 关键输出）
+1. strict policy stack
+```bash
+/Users/Zhuanz/Documents/Code/universal-harness-kit/scripts/agent-policy-stack --tool codex --cwd "$PWD" --strict --strict-profile harness
+```
+关键输出:
+- `strict_result=pass`
+
+2. verify
+```bash
+./scripts/verify
+```
+关键输出:
+- `[verify] csm py_compile OK`
+- `19 passed`
+- `Required test coverage of 60% reached. Total coverage: 75.10%`
+- `[verify] pytest coverage gate OK (>=60%)`
+
+3. secrets-check
+```bash
+./scripts/secrets-check
+```
+关键输出:
+- `[secrets-check] OK`
+
+## 当前状态：[Phase 7 CSM lane（7.2/7.6/7.10）已完成，验证通过；待提交记录 commit SHA]
+## 下一步：[提交当前分支并回传 SHA；若需要可补充 CI badge/branch protection 对齐]
+## 已知问题：[CI 新增为 workflow 层校验，本地 `scripts/verify` 仍未集成 ruff（当前按任务要求仅在 CI 执行 ruff）]

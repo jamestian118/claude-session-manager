@@ -120,6 +120,21 @@ def _default_handoff_roots() -> list[Path]:
     return out
 
 
+def _default_handoff_watcher_script() -> Path:
+    env = os.environ.get("CSM_HANDOFF_WATCHER_SCRIPT", "").strip()
+    if env:
+        return Path(os.path.expanduser(env))
+
+    return (
+        Path.home()
+        / "Library"
+        / "Application Support"
+        / "cli-handoff-bundle"
+        / "bin"
+        / "ai_handoff_watch.py"
+    )
+
+
 def _handoff_snapshot_candidates(session: SessionSummary) -> list[Path]:
     """Return candidate snapshot paths for a session, most-preferred first."""
 
@@ -209,10 +224,12 @@ def find_handoff_snapshot(session: SessionSummary) -> Path | None:
 
 def _missing_snapshot_message(session: SessionSummary) -> str:
     tool = _handoff_tool_slug(session.tool_type)
+    watcher_script = _default_handoff_watcher_script()
+    watcher_cmd = f"/usr/bin/python3 {shlex.quote(str(watcher_script))} once"
     return (
         "找不到 handoff 快照文件。\n"
         "你可以先确保 ai_handoff_watch 在运行，或手动执行一次：\n"
-        "  /usr/bin/python3 /Users/Zhuanz/Library/Application Support/cli-handoff-bundle/bin/ai_handoff_watch.py once\n"
+        f"  {watcher_cmd}\n"
         f"并检查是否生成了：{tool}-{session.session_id}.md"
     )
 
