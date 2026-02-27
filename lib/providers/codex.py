@@ -189,30 +189,29 @@ class CodexProvider(BaseProvider):
             return []
         results = []
         try:
-            conn = sqlite3.connect(str(db_path))
-            cur = conn.cursor()
-            cur.execute(
-                "SELECT id, title, cwd, created_at, updated_at, first_user_message "
-                "FROM threads ORDER BY updated_at DESC"
-            )
-            for row in cur.fetchall():
-                sid, title, cwd, created_at, updated_at, first_msg = row
-                # SQLite 时间戳是秒，转毫秒
-                ts_start = (created_at * 1000) if created_at < 1e12 else created_at
-                ts_end = (updated_at * 1000) if updated_at < 1e12 else updated_at
-                # title 可能是多行的，取第一行作为显示
-                display = (first_msg or title or "").split("\n")[0].strip()
-                results.append(SessionSummary(
-                    session_id=sid,
-                    project=cwd or "",
-                    first_display=display,
-                    last_display=display,
-                    timestamp_start=ts_start,
-                    timestamp_end=ts_end,
-                    message_count=1,
-                    tool_type=ToolType.CODEX,
-                ))
-            conn.close()
+            with sqlite3.connect(str(db_path)) as conn:
+                cur = conn.cursor()
+                cur.execute(
+                    "SELECT id, title, cwd, created_at, updated_at, first_user_message "
+                    "FROM threads ORDER BY updated_at DESC"
+                )
+                for row in cur.fetchall():
+                    sid, title, cwd, created_at, updated_at, first_msg = row
+                    # SQLite 时间戳是秒，转毫秒
+                    ts_start = (created_at * 1000) if created_at < 1e12 else created_at
+                    ts_end = (updated_at * 1000) if updated_at < 1e12 else updated_at
+                    # title 可能是多行的，取第一行作为显示
+                    display = (first_msg or title or "").split("\n")[0].strip()
+                    results.append(SessionSummary(
+                        session_id=sid,
+                        project=cwd or "",
+                        first_display=display,
+                        last_display=display,
+                        timestamp_start=ts_start,
+                        timestamp_end=ts_end,
+                        message_count=1,
+                        tool_type=ToolType.CODEX,
+                    ))
         except Exception:
             pass
         return results
@@ -458,21 +457,20 @@ class CodexProvider(BaseProvider):
         db_path = self._find_state_db()
         if db_path and db_path.exists():
             try:
-                conn = sqlite3.connect(str(db_path))
-                cur = conn.cursor()
+                with sqlite3.connect(str(db_path)) as conn:
+                    cur = conn.cursor()
 
-                # 删除 logs（无 CASCADE，需手动）
-                cur.execute("DELETE FROM logs WHERE thread_id = ?", (session_id,))
-                if cur.rowcount > 0:
-                    result["sqlite_logs"] = True
+                    # 删除 logs（无 CASCADE，需手动）
+                    cur.execute("DELETE FROM logs WHERE thread_id = ?", (session_id,))
+                    if cur.rowcount > 0:
+                        result["sqlite_logs"] = True
 
-                # 删除 threads（CASCADE 会清理 thread_dynamic_tools, stage1_outputs）
-                cur.execute("DELETE FROM threads WHERE id = ?", (session_id,))
-                if cur.rowcount > 0:
-                    result["sqlite_thread"] = True
+                    # 删除 threads（CASCADE 会清理 thread_dynamic_tools, stage1_outputs）
+                    cur.execute("DELETE FROM threads WHERE id = ?", (session_id,))
+                    if cur.rowcount > 0:
+                        result["sqlite_thread"] = True
 
-                conn.commit()
-                conn.close()
+                    conn.commit()
             except Exception:
                 pass
 
@@ -517,22 +515,21 @@ class CodexProvider(BaseProvider):
         # 6. 清理 codex-dev.db 中的关联记录
         if self._dev_db_file.exists():
             try:
-                conn = sqlite3.connect(str(self._dev_db_file))
-                cur = conn.cursor()
-                changed = False
+                with sqlite3.connect(str(self._dev_db_file)) as conn:
+                    cur = conn.cursor()
+                    changed = False
 
-                # inbox_items 可能关联 thread_id
-                cur.execute("DELETE FROM inbox_items WHERE thread_id = ?", (session_id,))
-                if cur.rowcount > 0:
-                    changed = True
+                    # inbox_items 可能关联 thread_id
+                    cur.execute("DELETE FROM inbox_items WHERE thread_id = ?", (session_id,))
+                    if cur.rowcount > 0:
+                        changed = True
 
-                # automation_runs 以 thread_id 为主键
-                cur.execute("DELETE FROM automation_runs WHERE thread_id = ?", (session_id,))
-                if cur.rowcount > 0:
-                    changed = True
+                    # automation_runs 以 thread_id 为主键
+                    cur.execute("DELETE FROM automation_runs WHERE thread_id = ?", (session_id,))
+                    if cur.rowcount > 0:
+                        changed = True
 
-                conn.commit()
-                conn.close()
+                    conn.commit()
                 if changed:
                     result["dev_db"] = True
             except Exception:
@@ -587,11 +584,10 @@ class CodexProvider(BaseProvider):
         if not db_path or not db_path.exists():
             return None
         try:
-            conn = sqlite3.connect(str(db_path))
-            cur = conn.cursor()
-            cur.execute("SELECT title FROM threads WHERE id = ?", (session_id,))
-            row = cur.fetchone()
-            conn.close()
+            with sqlite3.connect(str(db_path)) as conn:
+                cur = conn.cursor()
+                cur.execute("SELECT title FROM threads WHERE id = ?", (session_id,))
+                row = cur.fetchone()
             if not row:
                 return None
             title = row[0]
@@ -680,15 +676,14 @@ class CodexProvider(BaseProvider):
             return False, "Codex state sqlite not found"
 
         try:
-            conn = sqlite3.connect(str(db_path))
-            cur = conn.cursor()
-            cur.execute(
-                "UPDATE threads SET title = ? WHERE id = ?",
-                (cleaned, session_id),
-            )
-            changed = cur.rowcount if cur.rowcount is not None else 0
-            conn.commit()
-            conn.close()
+            with sqlite3.connect(str(db_path)) as conn:
+                cur = conn.cursor()
+                cur.execute(
+                    "UPDATE threads SET title = ? WHERE id = ?",
+                    (cleaned, session_id),
+                )
+                changed = cur.rowcount if cur.rowcount is not None else 0
+                conn.commit()
         except Exception as e:
             return False, f"Failed to update sqlite title: {e}"
 
@@ -706,37 +701,34 @@ class CodexProvider(BaseProvider):
             return False, "Codex state sqlite not found"
 
         try:
-            conn = sqlite3.connect(str(db_path))
-            cur = conn.cursor()
-            cur.execute("SELECT rollout_path, first_user_message, title FROM threads WHERE id = ?", (session_id,))
-            row = cur.fetchone()
-            if not row:
-                conn.close()
-                return False, "Thread not found in sqlite"
+            with sqlite3.connect(str(db_path)) as conn:
+                cur = conn.cursor()
+                cur.execute("SELECT rollout_path, first_user_message, title FROM threads WHERE id = ?", (session_id,))
+                row = cur.fetchone()
+                if not row:
+                    return False, "Thread not found in sqlite"
 
-            rollout_path, first_user_message, current_title = row
+                rollout_path, first_user_message, current_title = row
 
-            default = ""
-            if isinstance(rollout_path, str) and rollout_path.strip():
-                p = Path(rollout_path)
-                if p.exists():
-                    summary = self._parse_session_file_summary(p)
-                    if summary:
-                        default = (summary.first_display or "").strip()
-            if not default:
-                default = (first_user_message or "").strip() if isinstance(first_user_message, str) else ""
-            if not default:
-                # If we cannot infer a default, keep the current title but still clear global override.
-                conn.close()
-                self._clear_global_state_title(session_id)
-                return True, "OK (no default title found; kept sqlite title)"
+                default = ""
+                if isinstance(rollout_path, str) and rollout_path.strip():
+                    p = Path(rollout_path)
+                    if p.exists():
+                        summary = self._parse_session_file_summary(p)
+                        if summary:
+                            default = (summary.first_display or "").strip()
+                if not default:
+                    default = (first_user_message or "").strip() if isinstance(first_user_message, str) else ""
+                if not default:
+                    # If we cannot infer a default, keep the current title but still clear global override.
+                    self._clear_global_state_title(session_id)
+                    return True, "OK (no default title found; kept sqlite title)"
 
-            cur.execute(
-                "UPDATE threads SET title = ? WHERE id = ?",
-                (default, session_id),
-            )
-            conn.commit()
-            conn.close()
+                cur.execute(
+                    "UPDATE threads SET title = ? WHERE id = ?",
+                    (default, session_id),
+                )
+                conn.commit()
         except Exception as e:
             return False, f"Failed to restore sqlite title: {e}"
 
