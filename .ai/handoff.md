@@ -334,3 +334,29 @@ PY
 ## 当前状态：[Phase 3 任务 3.6/3.7/3.8/3.9 已完成；关键文件为 `lib/logging_config.py`、`csm.py`、`lib/store.py`、`lib/mcp_server.py`、`lib/providers/codex.py`、`lib/tui.py`]
 ## 下一步：[可选运行 `CSM_LOG_LEVEL=INFO python3 csm.py mcp` 并实际调用一次 MCP tool，确认 request logging 在运行态输出；最小验收命令 `./scripts/verify && ./scripts/secrets-check`]
 ## 已知问题：[本次未执行真实 MCP 客户端端到端调用，仅完成静态与脚本验收；默认日志级别为 WARNING，需设置 `CSM_LOG_LEVEL` 才能看到 info/debug 级日志]
+
+## 2026-02-27 Gate 3 收口补丁：console script
+
+### Goal / DoD
+- Goal: 让 Gate 3 命令 `csm list` 可直接执行（非 `python csm.py` 等价路径）。
+- DoD: `pyproject.toml` 提供 `project.scripts.csm`，并通过 verify/secrets-check。
+
+### Changes
+- Updated: `pyproject.toml`
+  - 新增：
+    - `[project.scripts]`
+    - `csm = "csm:main"`
+
+### Verification
+- `/Users/Zhuanz/Documents/Code/universal-harness-kit/scripts/agent-policy-stack --tool codex --cwd "$PWD" --strict --strict-profile harness`
+  - `strict_result=pass`
+- `./scripts/verify`
+  - `[verify] csm py_compile OK`
+- `./scripts/secrets-check`
+  - `[secrets-check] OK`
+
+### Commit
+- `52985a8` `build: add csm console entrypoint script`
+
+### Note
+- 当前环境默认 Python 3.9 路径运行 `csm` 仍可能触发运行期类型注解兼容问题；Gate 3 实测使用 Python 3.11 wrapper 通过。
