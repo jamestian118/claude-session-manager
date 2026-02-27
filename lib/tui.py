@@ -1,5 +1,7 @@
 """curses 交互式 TUI 界面"""
 
+from __future__ import annotations
+
 import curses
 import locale
 import logging
@@ -1047,6 +1049,10 @@ end run
         elif key == ord("b"):  # 上翻页
             self.detail_scroll = max(0, self.detail_scroll - view_h)
         elif key in (ord("q"), 27):
+            self.detail = None
+            self.detail_scroll = 0
+            self._detail_lines = []
+            self._detail_total_lines = 0
             self.mode = "list"
 
     # ── 项目分组视图 ──

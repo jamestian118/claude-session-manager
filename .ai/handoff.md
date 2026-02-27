@@ -478,3 +478,26 @@ PY
 ## 当前状态：[Phase 5.7-5.13 改造已完成并通过 strict/verify/secrets-check；关键文件见上方 key files]
 ## 下一步：[若需运行态补验，可手动调用 MCP `get_handoff_snapshot` 验证 repo-local 快照命中；最小验收命令 `./scripts/verify && ./scripts/secrets-check`]
 ## 已知问题：[本次未执行真实 MCP 客户端端到端调用，当前结论基于单测 + 脚本验收 + 静态代码路径检查]
+
+## 2026-02-27 Phase 6 CSM 主任务（6.4-6.8）✅
+
+## 当前状态：[已完成 6.4-6.8；关键文件：csm.py, lib/tui.py, tests/test_csm_cli.py]
+- 6.4 CLI 输出增加 ANSI 颜色：工具标识、时间、项目路径（TTY 且未设置 NO_COLOR 时启用）。
+- 6.5 统一 `cmd_*` 返回 `int`（0/1/2），并在失败场景返回明确 code。
+- 6.6 `csm list` 新增 `--limit` 与 `--json`。
+- 6.7 帮助文本补充“无参数 = 启动 TUI”。
+- 6.8 TUI detail 退出（q/Esc）时清空 `_detail_lines`，并重置 detail 状态。
+
+验证证据（命令 + 关键输出）
+- `pytest -q tests/test_csm_cli.py`
+  - `4 passed in 0.02s`
+- `./scripts/verify`
+  - `[verify] csm py_compile OK`
+  - `19 passed in 0.08s`
+  - `[verify] pytest coverage gate OK (>=60%)`
+- `./scripts/secrets-check`
+  - `[secrets-check] OK`
+
+## 下一步：[可选人工 smoke：`python3 csm.py list --limit 3`、`python3 csm.py list --json --limit 2`、TUI 进入 detail 后 q 返回确认缓存清空]
+
+## 已知问题：[无阻塞；ANSI 颜色仅在 TTY 生效，符合 NO_COLOR/非 TTY 约定]
