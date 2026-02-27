@@ -7,7 +7,7 @@ name = "claude-session-manager"
 version = "0.1.0"
 description = "Unified session manager for Claude, Codex, and Gemini CLI tools."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 dependencies = [
   "mcp>=1.26.0,<2",
 ]
