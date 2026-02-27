@@ -569,3 +569,9 @@ PY
 ## 2026-02-27 Phase 7 follow-up（7.5 cross-ref）
 - 在 README（中英）补充 CHB snapshot schema 引用：`$CHB_ROOT/docs/snapshot-schema.md`。
 - 目的：与 OMO 共用快照契约，减少跨工具 handoff 解析分歧。
+
+## 2026-02-27 Phase 8 CSM（8.1/8.2/8.7）
+- 扩充 `AGENTS.md`（repo map + code standards + testing requirements）。
+- README 增补平台限制声明（macOS-only for TUI/terminal integration）。
+- 新增 `CHANGELOG.md`。
+- 验证：strict/verify/secrets 全绿（见 `/tmp/phase8-claude-session-manager.log`）。

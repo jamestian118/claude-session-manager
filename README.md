@@ -2,6 +2,10 @@
 
 统一管理 Claude / Codex / Gemini 的会话记录。
 
+平台限制声明：
+- `TUI` 与 `open/handoff/review` 的“新终端启动”能力按 macOS（Terminal + osascript）优化。
+- 在 Linux/Windows 上，非 TUI CLI 子命令仍可用，但上述终端集成功能需要自行适配。
+
 ## 功能
 
 - 列出、搜索、删除和恢复多种 CLI 工具的会话
@@ -334,6 +338,12 @@ Python 3.10+。MCP Server 需要额外安装：`pip install mcp`。
 # CSM — CLI Session Manager
 
 Unified session manager for Claude / Codex / Gemini CLI tools.
+
+Platform limitations:
+- The `TUI` and new-terminal integration (`open/handoff/review`) are optimized for macOS
+  (Terminal + osascript).
+- On Linux/Windows, non-TUI CLI commands remain usable, but terminal integration features
+  require custom adaptation.
 
 ## Features
 
