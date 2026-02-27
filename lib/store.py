@@ -1,6 +1,7 @@
 """数据层 — 聚合调度，统一管理多工具会话"""
 
 from collections import defaultdict
+import logging
 
 from . import session_flags
 from . import session_names
@@ -9,6 +10,8 @@ from .providers.base import BaseProvider
 from .providers.claude import ClaudeProvider
 from .providers.codex import CodexProvider
 from .providers.gemini import GeminiProvider
+
+logger = logging.getLogger(__name__)
 
 # 所有已注册的 provider
 _PROVIDERS: list[BaseProvider] = [
@@ -20,7 +23,18 @@ _PROVIDERS: list[BaseProvider] = [
 
 def get_available_providers() -> list[BaseProvider]:
     """返回数据目录存在的 provider"""
-    return [p for p in _PROVIDERS if p.is_available()]
+    providers: list[BaseProvider] = []
+    for provider in _PROVIDERS:
+        try:
+            if provider.is_available():
+                providers.append(provider)
+        except Exception as e:
+            logger.warning(
+                "provider availability check failed: provider=%s error=%s",
+                provider.tool_type.label,
+                e,
+            )
+    return providers
 
 
 def _get_provider(tool_type: ToolType) -> BaseProvider | None:
@@ -44,7 +58,12 @@ def load_sessions(tool_filter: ToolType | None = None) -> list[SessionSummary]:
     for p in providers:
         try:
             all_sessions.extend(p.load_sessions())
-        except Exception:
+        except Exception as e:
+            logger.warning(
+                "provider load failed: provider=%s error=%s",
+                p.tool_type.label,
+                e,
+            )
             continue
 
     all_sessions.sort(key=lambda s: s.timestamp_end, reverse=True)
@@ -120,13 +139,25 @@ def delete_session(session_id: str, tool_type: ToolType) -> dict[str, bool]:
     try:
         ok, _ = session_names.set_custom_name(tool_type, session_id, "")
         result["custom_name"] = bool(ok)
-    except Exception:
+    except Exception as e:
+        logger.debug(
+            "failed to clear custom name metadata: tool=%s session_id=%s error=%s",
+            tool_type.label,
+            session_id,
+            e,
+        )
         result["custom_name"] = False
 
     try:
         ok, _ = session_flags.set_review_status(tool_type, session_id, "")
         result["review_status"] = bool(ok)
-    except Exception:
+    except Exception as e:
+        logger.debug(
+            "failed to clear review status metadata: tool=%s session_id=%s error=%s",
+            tool_type.label,
+            session_id,
+            e,
+        )
         result["review_status"] = False
 
     return result

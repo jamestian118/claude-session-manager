@@ -330,3 +330,7 @@ PY
 ## 当前状态：[Phase 2 任务 2.8/2.9/2.10 已完成；关键文件为 `pyproject.toml`、`scripts/install.sh`、`scripts/uninstall.sh`、`docs/install-uninstall.usage.zh-en.md`]
 ## 下一步：[如需端到端演练可运行 `./scripts/install.sh` 与 `./scripts/uninstall.sh`；最小验收命令 `./scripts/verify && ./scripts/secrets-check`]
 ## 已知问题：[本次未执行 install/uninstall 以避免改动本机 MCP 注册与 state 目录；脚本语法与主流程已静态检查]
+
+## 当前状态：[Phase 3 任务 3.6/3.7/3.8/3.9 已完成；关键文件为 `lib/logging_config.py`、`csm.py`、`lib/store.py`、`lib/mcp_server.py`、`lib/providers/codex.py`、`lib/tui.py`]
+## 下一步：[可选运行 `CSM_LOG_LEVEL=INFO python3 csm.py mcp` 并实际调用一次 MCP tool，确认 request logging 在运行态输出；最小验收命令 `./scripts/verify && ./scripts/secrets-check`]
+## 已知问题：[本次未执行真实 MCP 客户端端到端调用，仅完成静态与脚本验收；默认日志级别为 WARNING，需设置 `CSM_LOG_LEVEL` 才能看到 info/debug 级日志]

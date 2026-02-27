@@ -2,6 +2,7 @@
 
 import curses
 import locale
+import logging
 import os
 import subprocess
 import sys
@@ -14,6 +15,8 @@ try:
 except ImportError:
     open_mcp_handoff_in_terminal = None
 from .utils import display_width, truncate, ts_to_str, short_project
+
+logger = logging.getLogger(__name__)
 
 
 # 工具筛选循环顺序
@@ -448,32 +451,32 @@ end run
         # Suspend curses UI temporarily.
         try:
             curses.def_prog_mode()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("failed to save curses program mode before terminal prompt: error=%s", e)
 
         # Restore a sane "shell" terminal mode before leaving curses. This is critical for
         # `input()` / readline to actually echo what the user types.
         try:
             curses.nocbreak()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("failed to disable cbreak for terminal prompt: error=%s", e)
         try:
             curses.noraw()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("failed to disable raw mode for terminal prompt: error=%s", e)
         try:
             curses.echo()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("failed to enable echo for terminal prompt: error=%s", e)
         try:
             self.stdscr.keypad(False)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("failed to disable keypad for terminal prompt: error=%s", e)
 
         try:
             curses.endwin()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("failed to leave curses mode for terminal prompt: error=%s", e)
 
         fd = None
         old_tio = None
@@ -521,8 +524,8 @@ end run
                 try:
                     import readline as _rl
                     _rl.set_startup_hook(None)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("failed to clear readline startup hook before prompt: error=%s", e)
 
             try:
                 return input(prompt)
@@ -531,39 +534,39 @@ end run
                     try:
                         import readline as _rl
                         _rl.set_startup_hook(None)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("failed to clear readline startup hook after prompt: error=%s", e)
         except (KeyboardInterrupt, EOFError):
             return None
         finally:
             if old_tio is not None and fd is not None:
                 try:
                     termios.tcsetattr(fd, termios.TCSADRAIN, old_tio)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("failed to restore terminal attributes after prompt: error=%s", e)
             # Restore curses program mode.
             try:
                 curses.reset_prog_mode()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("failed to restore curses program mode: error=%s", e)
             try:
                 curses.noecho()
                 curses.cbreak()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("failed to restore curses input mode: error=%s", e)
             try:
                 self.stdscr.keypad(True)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("failed to re-enable keypad after prompt: error=%s", e)
             try:
                 curses.curs_set(0)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("failed to hide cursor after prompt: error=%s", e)
             try:
                 self.stdscr.erase()
                 self.stdscr.refresh()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("failed to refresh screen after prompt: error=%s", e)
 
     def _prompt_name_curses(self, default: str = "") -> str | None:
         """Inline curses editor (fallback / power-user mode).
@@ -804,8 +807,13 @@ end run
                 # Mark as pending (best-effort) so the list shows the intent.
                 try:
                     store.set_session_review_status(s.session_id, s.tool_type, "pending", anchor_ts_ms=int(s.timestamp_end or 0))
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(
+                        "failed to set pending review status from TUI: tool=%s session_id=%s error=%s",
+                        s.tool_type.label,
+                        s.session_id,
+                        e,
+                    )
 
                 self._flash_status(f"已打开审查: {s.tool_type.label} -> {target.label} {s.session_id[:8]}")
 

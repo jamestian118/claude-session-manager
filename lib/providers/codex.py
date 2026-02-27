@@ -1,11 +1,14 @@
 """Codex CLI provider — 从 ~/.codex/ 读取会话数据"""
 
 import json
+import logging
 import os
 import sqlite3
 from pathlib import Path
 from .base import BaseProvider
 from ..models import ToolType, SessionSummary, SessionDetail, ChatMessage
+
+logger = logging.getLogger(__name__)
 
 
 class CodexProvider(BaseProvider):
@@ -178,7 +181,8 @@ class CodexProvider(BaseProvider):
                     summary = self._parse_session_file_summary(jsonl)
                     if summary:
                         results.append(summary)
-                except Exception:
+                except Exception as e:
+                    logger.debug("failed to parse codex session file: path=%s error=%s", jsonl, e)
                     continue
         return results
 
@@ -212,8 +216,8 @@ class CodexProvider(BaseProvider):
                         message_count=1,
                         tool_type=ToolType.CODEX,
                     ))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("failed to load codex sqlite fallback: path=%s error=%s", db_path, e)
         return results
 
     def _parse_session_file_summary(self, path: Path) -> SessionSummary | None:
@@ -471,8 +475,8 @@ class CodexProvider(BaseProvider):
                         result["sqlite_thread"] = True
 
                     conn.commit()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("failed to delete codex sqlite session rows: session_id=%s error=%s", session_id, e)
 
         # 4. 删除 shell_snapshots 文件
         snapshot = self._shell_snapshots_dir / f"{session_id}.sh"
@@ -509,8 +513,8 @@ class CodexProvider(BaseProvider):
                 if modified:
                     self._atomic_write_json(self._global_state_file, state)
                     result["global_state"] = True
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("failed to update codex global state during delete: session_id=%s error=%s", session_id, e)
 
         # 6. 清理 codex-dev.db 中的关联记录
         if self._dev_db_file.exists():
@@ -532,8 +536,8 @@ class CodexProvider(BaseProvider):
                     conn.commit()
                 if changed:
                     result["dev_db"] = True
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("failed to clean codex dev db during delete: session_id=%s error=%s", session_id, e)
 
         return result
 

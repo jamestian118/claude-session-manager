@@ -122,6 +122,18 @@ export CSM_TUI_NAME_INPUT=terminal  # 默认
 python csm.py
 ```
 
+### 日志级别（`CSM_LOG_LEVEL`）
+
+- 默认日志级别是 `WARNING`。
+- 可设置为 `DEBUG` / `INFO` / `WARNING` / `ERROR` / `CRITICAL`（也支持数值级别）。
+- MCP server 会在每次 tool 请求记录日志（`tool`、`duration_ms`、`status=success|error`）；失败场景会附带 `error` 字段。
+
+示例：
+```bash
+export CSM_LOG_LEVEL=INFO
+python csm.py mcp
+```
+
 ## 与 cli-handoff-bundle 联动（跨工具接力）
 
 为了做到 “Claude API 挂了就立刻切 Codex 接着干” 这类场景，`handoff`/`x`/`review`/`v` 依赖一个自动生成的会话快照文件。
@@ -440,6 +452,18 @@ export CSM_TUI_NAME_INPUT=terminal  # default
 # export CSM_TUI_NAME_INPUT=dialog
 # export CSM_TUI_NAME_INPUT=curses
 python csm.py
+```
+
+### Logging Level (`CSM_LOG_LEVEL`)
+
+- Default level is `WARNING`.
+- Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` (numeric levels also work).
+- MCP server logs each tool request with `tool`, `duration_ms`, and `status=success|error`; failed requests include `error`.
+
+Example:
+```bash
+export CSM_LOG_LEVEL=INFO
+python csm.py mcp
 ```
 
 ## cli-handoff-bundle Integration (Cross-Tool Handoff)

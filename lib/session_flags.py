@@ -22,12 +22,15 @@ from __future__ import annotations
 from contextlib import contextmanager
 import fcntl
 import json
+import logging
 import os
 import sys
 import time
 from pathlib import Path
 
 from .models import SessionDetail, SessionSummary, ToolType
+
+logger = logging.getLogger(__name__)
 
 _REVIEW_STATUSES = {"", "pending", "reviewed", "rechecked"}
 
@@ -216,8 +219,14 @@ def set_review_status(
                 if anchor_ts_ms is not None:
                     try:
                         rec["review_anchor_ts_ms"] = int(anchor_ts_ms)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(
+                            "invalid review anchor timestamp: tool=%s session_id=%s value=%r error=%s",
+                            tool_type.label,
+                            session_id,
+                            anchor_ts_ms,
+                            e,
+                        )
                 flags[k] = rec
             else:
                 flags.pop(k, None)
@@ -295,7 +304,13 @@ def apply_flags(sessions: list[SessionSummary]) -> None:
 
                     s.review_status = status
                     s.review_updated_at = int(updated_at or 0)
-                except Exception:
+                except Exception as e:
+                    logger.debug(
+                        "failed to apply review flag: tool=%s session_id=%s error=%s",
+                        s.tool_type.label,
+                        s.session_id,
+                        e,
+                    )
                     continue
 
             if changed:

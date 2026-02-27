@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from lib import store
+from lib.logging_config import configure_logging
 from lib.models import ToolType
 from lib.tui import TUI
 from lib.utils import ts_to_str, short_project, format_session_line
@@ -452,6 +453,8 @@ def cmd_mcp(args):
 
 
 def main():
+    configure_logging()
+
     parser = argparse.ArgumentParser(
         prog="csm",
         description="CLI Session Manager — 多工具统一会话管理",

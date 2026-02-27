@@ -10,6 +10,7 @@ Goals:
 
 from __future__ import annotations
 
+import logging
 import os
 import shlex
 import shutil
@@ -18,6 +19,8 @@ import sys
 from pathlib import Path
 
 from .models import SessionSummary, ToolType
+
+logger = logging.getLogger(__name__)
 
 
 def _resolve_exe(cmd0: str) -> str:
@@ -146,8 +149,13 @@ def _handoff_snapshot_candidates(session: SessionSummary) -> list[Path]:
                 repo_root = (p.stdout or "").strip().splitlines()[0].strip()
                 if repo_root:
                     candidates.append(Path(repo_root) / ".ai" / "handoff" / "sessions" / filename)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(
+                "failed to resolve repo-local handoff path: project=%s session_id=%s error=%s",
+                project,
+                session.session_id,
+                e,
+            )
 
     # 2) Global roots.
     for root in _default_handoff_roots():
@@ -175,12 +183,13 @@ def _snapshot_score(path: Path) -> tuple[int, float]:
             score += 3
         if "Repo Handoff File (excerpt)" in head:
             score += 2
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("failed to read snapshot head: path=%s error=%s", path, e)
 
     try:
         mtime = path.stat().st_mtime
-    except Exception:
+    except Exception as e:
+        logger.debug("failed to stat snapshot mtime: path=%s error=%s", path, e)
         mtime = 0.0
 
     return score, float(mtime)

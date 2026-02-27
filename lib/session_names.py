@@ -12,12 +12,15 @@ from __future__ import annotations
 from contextlib import contextmanager
 import fcntl
 import json
+import logging
 import os
 import sys
 import time
 from pathlib import Path
 
 from .models import ToolType, SessionDetail, SessionSummary
+
+logger = logging.getLogger(__name__)
 
 
 def _tool_slug(tool_type: ToolType) -> str:
@@ -152,7 +155,13 @@ def apply_custom_names(sessions: list[SessionSummary]) -> None:
     for s in sessions:
         try:
             s.custom_name = names.get(_key(s.tool_type, s.session_id), "")
-        except Exception:
+        except Exception as e:
+            logger.debug(
+                "failed to apply custom name: tool=%s session_id=%s error=%s",
+                s.tool_type.label,
+                s.session_id,
+                e,
+            )
             continue
 
 

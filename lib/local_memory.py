@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import sqlite3
 import sys
@@ -12,6 +13,8 @@ from pathlib import Path
 
 from . import store
 from .models import ToolType
+
+logger = logging.getLogger(__name__)
 
 _TOOL_MAP = {
     "claude": ToolType.CLAUDE,
@@ -102,7 +105,8 @@ def _has_unique_session_tool(conn: sqlite3.Connection) -> bool:
         try:
             is_unique = bool(idx["unique"])
             idx_name = str(idx["name"])
-        except Exception:
+        except Exception as e:
+            logger.debug("failed to inspect sqlite index metadata: error=%s", e)
             continue
         if not is_unique:
             continue
