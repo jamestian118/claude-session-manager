@@ -326,3 +326,7 @@ PY
 1. 在真实大规模会话数据下做一次 TUI 冷启动耗时对比（before/after）。
 2. 为 `local_memory` 增加回归测试（迁移幂等、冲突更新语义）。
 3. 为 `session_flags/session_names` 增加多进程并发回归测试。
+
+## 当前状态：[Phase 2 任务 2.8/2.9/2.10 已完成；关键文件为 `pyproject.toml`、`scripts/install.sh`、`scripts/uninstall.sh`、`docs/install-uninstall.usage.zh-en.md`]
+## 下一步：[如需端到端演练可运行 `./scripts/install.sh` 与 `./scripts/uninstall.sh`；最小验收命令 `./scripts/verify && ./scripts/secrets-check`]
+## 已知问题：[本次未执行 install/uninstall 以避免改动本机 MCP 注册与 state 目录；脚本语法与主流程已静态检查]
