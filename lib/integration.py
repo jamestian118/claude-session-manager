@@ -19,6 +19,7 @@ import sys
 from pathlib import Path
 
 from .models import SessionSummary, ToolType
+from .utils import _tool_slug
 
 logger = logging.getLogger(__name__)
 
@@ -86,13 +87,7 @@ end run
 
 
 def _handoff_tool_slug(tool_type: ToolType) -> str:
-    if tool_type == ToolType.CLAUDE:
-        return "claude"
-    if tool_type == ToolType.CODEX:
-        return "codex"
-    if tool_type == ToolType.GEMINI:
-        return "gemini"
-    return tool_type.label.lower()
+    return _tool_slug(tool_type)
 
 
 def _default_handoff_roots() -> list[Path]:

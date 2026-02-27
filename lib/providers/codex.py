@@ -12,6 +12,8 @@ from ..models import ToolType, SessionSummary, SessionDetail, ChatMessage
 
 logger = logging.getLogger(__name__)
 
+_MULTITOOL_CODEX_PATH_CACHE: str | None = None
+
 
 class CodexProvider(BaseProvider):
     def __init__(self) -> None:
@@ -559,13 +561,18 @@ class CodexProvider(BaseProvider):
         用户的 PATH 中可能优先指向 codex-tui（如自编译版本），
         这里按优先级查找完整版。
         """
+        global _MULTITOOL_CODEX_PATH_CACHE
+        if _MULTITOOL_CODEX_PATH_CACHE:
+            return _MULTITOOL_CODEX_PATH_CACHE
+
         import shutil
         import subprocess
 
         # 优先：Homebrew 安装的完整版
         brew_path = "/opt/homebrew/bin/codex"
         if os.path.isfile(brew_path) and os.access(brew_path, os.X_OK):
-            return brew_path
+            _MULTITOOL_CODEX_PATH_CACHE = brew_path
+            return _MULTITOOL_CODEX_PATH_CACHE
 
         # 其次：PATH 中的 codex，检查是否支持 resume 子命令
         codex_path = shutil.which("codex")
@@ -576,12 +583,14 @@ class CodexProvider(BaseProvider):
                     capture_output=True, timeout=5,
                 )
                 if result.returncode == 0:
-                    return codex_path
+                    _MULTITOOL_CODEX_PATH_CACHE = codex_path
+                    return _MULTITOOL_CODEX_PATH_CACHE
             except (OSError, subprocess.TimeoutExpired):
                 pass
 
         # 兜底：直接用 codex，让系统 PATH 解析
-        return "codex"
+        _MULTITOOL_CODEX_PATH_CACHE = "codex"
+        return _MULTITOOL_CODEX_PATH_CACHE
 
     # ── 会话名称 / 标题（尽力写入 Codex 的本地状态） ──
 

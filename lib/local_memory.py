@@ -5,14 +5,13 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import os
 import sqlite3
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 from . import store
 from .models import ToolType
+from .utils import _default_state_dir, _tool_slug
 
 logger = logging.getLogger(__name__)
 
@@ -22,30 +21,7 @@ _TOOL_MAP = {
     "gemini": ToolType.GEMINI,
 }
 
-
-def _tool_slug(tool_type: ToolType) -> str:
-    if tool_type == ToolType.CLAUDE:
-        return "claude"
-    if tool_type == ToolType.CODEX:
-        return "codex"
-    if tool_type == ToolType.GEMINI:
-        return "gemini"
-    return tool_type.label.lower()
-
-
-def _default_state_dir() -> Path:
-    env = os.environ.get("CSM_STATE_DIR", "").strip()
-    if env:
-        return Path(os.path.expanduser(env))
-
-    if sys.platform == "darwin":
-        return Path.home() / "Library" / "Application Support" / "claude-session-manager"
-
-    xdg = os.environ.get("XDG_STATE_HOME", "").strip()
-    if xdg:
-        return Path(os.path.expanduser(xdg)) / "claude-session-manager"
-
-    return Path.home() / ".local" / "state" / "claude-session-manager"
+_SCHEMA_READY_DBS: set[str] = set()
 
 
 def db_path() -> Path:
@@ -59,7 +35,7 @@ def _connect() -> sqlite3.Connection:
     conn = sqlite3.connect(path, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
-    _init_schema(conn)
+    _init_schema(conn, path)
     return conn
 
 
@@ -158,13 +134,17 @@ def _ensure_indexes(conn: sqlite3.Connection) -> None:
     conn.execute("CREATE INDEX IF NOT EXISTS idx_memory_entries_session_updated ON memory_entries(session_id, updated_at DESC)")
 
 
-def _init_schema(conn: sqlite3.Connection) -> None:
+def _init_schema(conn: sqlite3.Connection, db_file: Path) -> None:
+    db_key = str(db_file.resolve())
+    if db_key in _SCHEMA_READY_DBS:
+        return
     if not _table_exists(conn, "memory_entries"):
         _create_memory_entries_table(conn)
     elif not _has_unique_session_tool(conn):
         _migrate_memory_entries_schema(conn)
     _ensure_indexes(conn)
     conn.commit()
+    _SCHEMA_READY_DBS.add(db_key)
 
 
 def _build_summary(detail) -> str:

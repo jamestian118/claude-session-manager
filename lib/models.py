@@ -60,7 +60,7 @@ class SessionDetail:
 
     session_id: str
     project: str
-    messages: list = field(default_factory=list)  # List[ChatMessage]
+    messages: list[ChatMessage] = field(default_factory=list)
 
     cwd: str = ""
     git_branch: str = ""
@@ -75,6 +75,6 @@ class SessionDetail:
     review_updated_at: int = 0
 
     # 结构化上下文提取
-    files_changed: list = field(default_factory=list)  # 修改过的文件路径
-    commands_run: list = field(default_factory=list)    # 执行过的命令
-    errors: list = field(default_factory=list)          # 遇到的错误
+    files_changed: list[str] = field(default_factory=list)  # 修改过的文件路径
+    commands_run: list[str] = field(default_factory=list)  # 执行过的命令
+    errors: list[str] = field(default_factory=list)  # 遇到的错误

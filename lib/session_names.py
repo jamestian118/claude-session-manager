@@ -14,39 +14,13 @@ import fcntl
 import json
 import logging
 import os
-import sys
 import time
 from pathlib import Path
 
 from .models import ToolType, SessionDetail, SessionSummary
+from .utils import _default_state_dir, _tool_slug
 
 logger = logging.getLogger(__name__)
-
-
-def _tool_slug(tool_type: ToolType) -> str:
-    if tool_type == ToolType.CLAUDE:
-        return "claude"
-    if tool_type == ToolType.CODEX:
-        return "codex"
-    if tool_type == ToolType.GEMINI:
-        return "gemini"
-    return tool_type.label.lower()
-
-
-def _default_state_dir() -> Path:
-    # Allow explicit override (useful for debugging / portable setups).
-    env = os.environ.get("CSM_STATE_DIR", "").strip()
-    if env:
-        return Path(os.path.expanduser(env))
-
-    if sys.platform == "darwin":
-        return Path.home() / "Library" / "Application Support" / "claude-session-manager"
-
-    xdg = os.environ.get("XDG_STATE_HOME", "").strip()
-    if xdg:
-        return Path(os.path.expanduser(xdg)) / "claude-session-manager"
-
-    return Path.home() / ".local" / "state" / "claude-session-manager"
 
 
 def _names_file() -> Path:

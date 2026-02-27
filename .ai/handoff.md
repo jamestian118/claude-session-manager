@@ -422,3 +422,59 @@ PY
 ## 当前状态：[Phase 4.1-4.3 已完成；测试框架与覆盖率门禁已落地，关键文件见上方 key files]
 ## 下一步：[按需扩展 provider 细粒度异常分支测试；最小验收命令 `./scripts/verify && ./scripts/secrets-check`]
 ## 已知问题：[当前 shell policy 拦截 `rm -f .coverage`；不影响 verify/secrets-check 与提交，可通过不纳入 git 暂避]
+
+## 2026-02-27 Phase 5.7-5.13：CSM maintainability pass
+
+### Goal / DoD
+- 提取 `_tool_slug()` + `_default_state_dir()` 到 `lib/utils.py` 并消除重复实现。
+- 提取 `_resolve_single_session()` 替换 `csm.py` 重复 session 解析逻辑。
+- argparse 改为 `set_defaults(func=...)` 子命令路由。
+- `lib/models.py` 补全 `SessionDetail` 的 list 类型注解。
+- 修复 MCP `get_handoff_snapshot` 的 dummy project 问题。
+- `_init_schema` 增加 module-level cache，避免重复 schema 检查。
+- `_find_multitool_codex()` 增加 module-level cache。
+
+### Repo State
+- branch: `ai/20260227-phase0-upgrade`
+- scope: `/Users/Zhuanz/Documents/Code/claude-session-manager`
+- key files:
+  - `lib/utils.py`
+  - `csm.py`
+  - `lib/local_memory.py`
+  - `lib/mcp_server.py`
+  - `lib/models.py`
+  - `lib/providers/codex.py`
+  - `lib/session_flags.py`
+  - `lib/session_names.py`
+  - `lib/integration.py`
+  - `tests/test_utils_cjk.py`
+
+### Verification（命令 + 关键输出）
+1. strict policy stack
+```bash
+/Users/Zhuanz/Documents/Code/universal-harness-kit/scripts/agent-policy-stack --tool codex --cwd "$PWD" --strict --strict-profile harness
+```
+关键输出:
+- `strict_result=pass`
+
+2. verify
+```bash
+./scripts/verify
+```
+关键输出:
+- `[verify] csm py_compile OK`
+- `15 passed`
+- `TOTAL ... 75%`
+- `Required test coverage of 60% reached. Total coverage: 75.10%`
+- `[verify] pytest coverage gate OK (>=60%)`
+
+3. secrets-check
+```bash
+./scripts/secrets-check
+```
+关键输出:
+- `[secrets-check] OK`
+
+## 当前状态：[Phase 5.7-5.13 改造已完成并通过 strict/verify/secrets-check；关键文件见上方 key files]
+## 下一步：[若需运行态补验，可手动调用 MCP `get_handoff_snapshot` 验证 repo-local 快照命中；最小验收命令 `./scripts/verify && ./scripts/secrets-check`]
+## 已知问题：[本次未执行真实 MCP 客户端端到端调用，当前结论基于单测 + 脚本验收 + 静态代码路径检查]

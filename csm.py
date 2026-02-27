@@ -11,9 +11,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from lib import store
 from lib.logging_config import configure_logging
-from lib.models import ToolType
+from lib.models import SessionSummary, ToolType
 from lib.tui import TUI
-from lib.utils import ts_to_str, short_project, format_session_line
+from lib.utils import _tool_slug, format_session_line, short_project, ts_to_str
 from lib.integration import open_in_terminal, open_handoff_in_terminal, open_review_in_terminal
 
 # --tool 参数到 ToolType 的映射
@@ -31,14 +31,6 @@ def _parse_tool_filter(args) -> ToolType | None:
     return None
 
 
-def _tool_slug(tool_type: ToolType) -> str:
-    return {
-        ToolType.CLAUDE: "claude",
-        ToolType.CODEX: "codex",
-        ToolType.GEMINI: "gemini",
-    }.get(tool_type, tool_type.label.lower())
-
-
 def _print_sessions(sessions):
     """打印会话列表（共享格式化逻辑）"""
     for s in sessions:
@@ -46,6 +38,23 @@ def _print_sessions(sessions):
         print(f"  {meta}  {s.session_id[:8]}")
         print(f"      {display[:60]}")
         print()
+
+
+def _resolve_single_session(sessions: list[SessionSummary], sid: str) -> SessionSummary | None:
+    sid = (sid or "").strip()
+    if not sid:
+        print("会话 ID 不能为空")
+        return None
+    matches = [s for s in sessions if s.session_id.startswith(sid)]
+    if not matches:
+        print(f"未找到会话: {sid}")
+        return None
+    if len(matches) > 1:
+        print(f"短 ID '{sid}' 匹配到多个会话，请提供更长的 ID:")
+        for m in matches:
+            print(f"  [{m.tool_type.label}] {m.session_id}")
+        return None
+    return matches[0]
 
 
 def cmd_list(args):
@@ -77,17 +86,9 @@ def cmd_delete(args):
     tool_filter = _parse_tool_filter(args)
 
     sessions = store.load_sessions(tool_filter)
-    matches = [s for s in sessions if s.session_id.startswith(sid)]
-    if not matches:
-        print(f"未找到会话: {sid}")
+    target = _resolve_single_session(sessions, sid)
+    if not target:
         return
-    if len(matches) > 1:
-        print(f"短 ID '{sid}' 匹配到多个会话，请提供更长的 ID:")
-        for m in matches:
-            print(f"  [{m.tool_type.label}] {m.session_id}")
-        return
-
-    target = matches[0]
     print(f"工具: {target.tool_type.label}")
     print(f"会话: {target.session_id}")
     print(f"项目: {short_project(target.project)}")
@@ -109,17 +110,9 @@ def cmd_resume(args):
     tool_filter = _parse_tool_filter(args)
 
     sessions = store.load_sessions(tool_filter)
-    matches = [s for s in sessions if s.session_id.startswith(sid)]
-    if not matches:
-        print(f"未找到会话: {sid}")
+    target = _resolve_single_session(sessions, sid)
+    if not target:
         return
-    if len(matches) > 1:
-        print(f"短 ID '{sid}' 匹配到多个会话，请提供更长的 ID:")
-        for m in matches:
-            print(f"  [{m.tool_type.label}] {m.session_id}")
-        return
-
-    target = matches[0]
     cmd = store.get_resume_command(target)
     if not cmd:
         print("无法获取恢复命令。")
@@ -134,17 +127,9 @@ def cmd_open(args):
     tool_filter = _parse_tool_filter(args)
 
     sessions = store.load_sessions(tool_filter)
-    matches = [s for s in sessions if s.session_id.startswith(sid)]
-    if not matches:
-        print(f"未找到会话: {sid}")
+    target = _resolve_single_session(sessions, sid)
+    if not target:
         return
-    if len(matches) > 1:
-        print(f"短 ID '{sid}' 匹配到多个会话，请提供更长的 ID:")
-        for m in matches:
-            print(f"  [{m.tool_type.label}] {m.session_id}")
-        return
-
-    target = matches[0]
     cmd = store.get_resume_command(target)
     if not cmd:
         print("无法获取恢复命令。")
@@ -163,17 +148,9 @@ def cmd_handoff(args):
     tool_filter = _parse_tool_filter(args)
 
     sessions = store.load_sessions(tool_filter)
-    matches = [s for s in sessions if s.session_id.startswith(sid)]
-    if not matches:
-        print(f"未找到会话: {sid}")
+    src = _resolve_single_session(sessions, sid)
+    if not src:
         return
-    if len(matches) > 1:
-        print(f"短 ID '{sid}' 匹配到多个会话，请提供更长的 ID:")
-        for m in matches:
-            print(f"  [{m.tool_type.label}] {m.session_id}")
-        return
-
-    src = matches[0]
 
     # Default: Claude -> Codex, Codex -> Claude.
     if getattr(args, "to", None):
@@ -199,17 +176,9 @@ def cmd_review(args):
     tool_filter = _parse_tool_filter(args)
 
     sessions = store.load_sessions(tool_filter)
-    matches = [s for s in sessions if s.session_id.startswith(sid)]
-    if not matches:
-        print(f"未找到会话: {sid}")
+    src = _resolve_single_session(sessions, sid)
+    if not src:
         return
-    if len(matches) > 1:
-        print(f"短 ID '{sid}' 匹配到多个会话，请提供更长的 ID:")
-        for m in matches:
-            print(f"  [{m.tool_type.label}] {m.session_id}")
-        return
-
-    src = matches[0]
 
     # Default: Claude -> Codex, Codex -> Claude.
     if getattr(args, "to", None):
@@ -240,17 +209,9 @@ def cmd_reviewed(args):
     tool_filter = _parse_tool_filter(args)
 
     sessions = store.load_sessions(tool_filter)
-    matches = [s for s in sessions if s.session_id.startswith(sid)]
-    if not matches:
-        print(f"未找到会话: {sid}")
+    target = _resolve_single_session(sessions, sid)
+    if not target:
         return
-    if len(matches) > 1:
-        print(f"短 ID '{sid}' 匹配到多个会话，请提供更长的 ID:")
-        for m in matches:
-            print(f"  [{m.tool_type.label}] {m.session_id}")
-        return
-
-    target = matches[0]
     ok, msg = store.set_session_review_status(target.session_id, target.tool_type, "reviewed", anchor_ts_ms=int(target.timestamp_end or 0))
     if ok:
         print(f"已标记已审: [{target.tool_type.label}] {target.session_id[:12]}")
@@ -264,17 +225,9 @@ def cmd_rechecked(args):
     tool_filter = _parse_tool_filter(args)
 
     sessions = store.load_sessions(tool_filter)
-    matches = [s for s in sessions if s.session_id.startswith(sid)]
-    if not matches:
-        print(f"未找到会话: {sid}")
+    target = _resolve_single_session(sessions, sid)
+    if not target:
         return
-    if len(matches) > 1:
-        print(f"短 ID '{sid}' 匹配到多个会话，请提供更长的 ID:")
-        for m in matches:
-            print(f"  [{m.tool_type.label}] {m.session_id}")
-        return
-
-    target = matches[0]
     ok, msg = store.set_session_review_status(target.session_id, target.tool_type, "rechecked", anchor_ts_ms=int(target.timestamp_end or 0))
     if ok:
         print(f"已标记已复查: [{target.tool_type.label}] {target.session_id[:12]}")
@@ -289,17 +242,9 @@ def cmd_unreview(args):
     tool_filter = _parse_tool_filter(args)
 
     sessions = store.load_sessions(tool_filter)
-    matches = [s for s in sessions if s.session_id.startswith(sid)]
-    if not matches:
-        print(f"未找到会话: {sid}")
+    target = _resolve_single_session(sessions, sid)
+    if not target:
         return
-    if len(matches) > 1:
-        print(f"短 ID '{sid}' 匹配到多个会话，请提供更长的 ID:")
-        for m in matches:
-            print(f"  [{m.tool_type.label}] {m.session_id}")
-        return
-
-    target = matches[0]
     ok, msg = store.set_session_review_status(target.session_id, target.tool_type, "")
     if ok:
         print(f"已清除审查标记: [{target.tool_type.label}] {target.session_id[:12]}")
@@ -313,17 +258,9 @@ def cmd_name(args):
     tool_filter = _parse_tool_filter(args)
 
     sessions = store.load_sessions(tool_filter)
-    matches = [s for s in sessions if s.session_id.startswith(sid)]
-    if not matches:
-        print(f"未找到会话: {sid}")
+    target = _resolve_single_session(sessions, sid)
+    if not target:
         return
-    if len(matches) > 1:
-        print(f"短 ID '{sid}' 匹配到多个会话，请提供更长的 ID:")
-        for m in matches:
-            print(f"  [{m.tool_type.label}] {m.session_id}")
-        return
-
-    target = matches[0]
     name = " ".join(getattr(args, "name", [])).strip()
     ok, msg = store.set_session_custom_name(target.session_id, target.tool_type, name)
     if ok:
@@ -384,17 +321,9 @@ def cmd_memory_sync(args):
 
     tool_filter = _parse_tool_filter(args)
     sessions = store.load_sessions(tool_filter)
-    matches = [s for s in sessions if s.session_id.startswith(sid)]
-    if not matches:
-        print(f"未找到会话: {sid}")
+    target = _resolve_single_session(sessions, sid)
+    if not target:
         return 2
-    if len(matches) > 1:
-        print(f"短 ID '{sid}' 匹配到多个会话，请提供更长的 ID:")
-        for m in matches:
-            print(f"  [{m.tool_type.label}] {m.session_id}")
-        return 2
-
-    target = matches[0]
     print(f"同步会话 {target.session_id[:8]} ({target.tool_type.label}) 到本地 memory...")
     result = sync_session(target.session_id, _tool_slug(target.tool_type))
     if "error" in result:
@@ -466,54 +395,70 @@ def main():
     sub = parser.add_subparsers(dest="command")
 
     # 子命令
-    sub.add_parser("list", aliases=["ls"], help="列出所有会话")
+    p_list = sub.add_parser("list", aliases=["ls"], help="列出所有会话")
+    p_list.set_defaults(func=cmd_list)
 
     p_search = sub.add_parser("search", aliases=["s"], help="搜索会话")
     p_search.add_argument("keyword", help="搜索关键词")
+    p_search.set_defaults(func=cmd_search)
 
     p_delete = sub.add_parser("delete", aliases=["rm"], help="删除会话")
     p_delete.add_argument("session_id", help="会话 ID（支持短 ID 前缀匹配）")
+    p_delete.set_defaults(func=cmd_delete)
 
     p_resume = sub.add_parser("resume", aliases=["r"], help="恢复会话")
     p_resume.add_argument("session_id", help="会话 ID（支持短 ID 前缀匹配）")
+    p_resume.set_defaults(func=cmd_resume)
 
     p_open = sub.add_parser("open", aliases=["o"], help="在新终端恢复会话（当前 CSM 不退出）")
     p_open.add_argument("session_id", help="会话 ID（支持短 ID 前缀匹配）")
+    p_open.set_defaults(func=cmd_open)
 
     p_handoff = sub.add_parser("handoff", aliases=["x"], help="基于 handoff 快照把会话接力到另一工具（在新终端启动）")
     p_handoff.add_argument("session_id", help="会话 ID（支持短 ID 前缀匹配）")
     p_handoff.add_argument("--to", choices=["claude", "codex"], help="指定接力目标工具（默认自动判断）")
+    p_handoff.set_defaults(func=cmd_handoff)
 
     p_review = sub.add_parser("review", aliases=["v"], help="基于 handoff 快照跳转到另一工具进行审查（新终端启动）")
     p_review.add_argument("session_id", help="会话 ID（支持短 ID 前缀匹配）")
     p_review.add_argument("--to", choices=["claude", "codex"], help="指定审查工具（默认自动判断）")
+    p_review.set_defaults(func=cmd_review)
 
     p_reviewed = sub.add_parser("reviewed", aliases=["rd"], help="标记会话为已完成审查（CSM 本地状态）")
     p_reviewed.add_argument("session_id", help="会话 ID（支持短 ID 前缀匹配）")
+    p_reviewed.set_defaults(func=cmd_reviewed)
 
     p_rechecked = sub.add_parser("rechecked", aliases=["rv"], help="标记会话为已完成复查/复验（CSM 本地状态）")
     p_rechecked.add_argument("session_id", help="会话 ID（支持短 ID 前缀匹配）")
+    p_rechecked.set_defaults(func=cmd_rechecked)
 
     p_unreview = sub.add_parser("unreview", aliases=["ru"], help="清除会话审查标记（CSM 本地状态）")
     p_unreview.add_argument("session_id", help="会话 ID（支持短 ID 前缀匹配）")
+    p_unreview.set_defaults(func=cmd_unreview)
 
     p_name = sub.add_parser("name", aliases=["rename", "n"], help="设置会话名称（并尽力同步到工具自身标题）")
     p_name.add_argument("session_id", help="会话 ID（支持短 ID 前缀匹配）")
     p_name.add_argument("name", nargs=argparse.REMAINDER, help="新的名称（留空表示清除）")
+    p_name.set_defaults(func=cmd_name)
 
-    sub.add_parser("stats", help="显示使用统计")
-    sub.add_parser("mcp", help="启动 MCP Server（stdio 模式，供 CLI agent 调用）")
+    p_stats = sub.add_parser("stats", help="显示使用统计")
+    p_stats.set_defaults(func=cmd_stats)
+    p_mcp = sub.add_parser("mcp", help="启动 MCP Server（stdio 模式，供 CLI agent 调用）")
+    p_mcp.set_defaults(func=cmd_mcp)
 
     p_mem_sync = sub.add_parser("memory-sync", aliases=["ms"], help="同步会话数据到本地 memory 索引")
     p_mem_sync.add_argument("session_id", nargs="?", help="会话 ID（支持短 ID 前缀匹配）")
     p_mem_sync.add_argument("--all", action="store_true", help="批量同步最近会话")
     p_mem_sync.add_argument("--limit", type=int, default=20, help="批量同步数量（默认 20）")
+    p_mem_sync.set_defaults(func=cmd_memory_sync)
 
     p_mem_search = sub.add_parser("memory-search", aliases=["mq"], help="搜索本地 memory 索引")
     p_mem_search.add_argument("query", help="搜索关键词")
     p_mem_search.add_argument("--limit", type=int, default=10, help="返回数量（默认 10）")
+    p_mem_search.set_defaults(func=cmd_memory_search)
 
-    sub.add_parser("memory-status", aliases=["mt"], help="查看本地 memory 存储状态")
+    p_mem_status = sub.add_parser("memory-status", aliases=["mt"], help="查看本地 memory 存储状态")
+    p_mem_status.set_defaults(func=cmd_memory_status)
 
     # 兼容 --list 等旧参数
     parser.add_argument("--list", action="store_true", help="列出所有会话")
@@ -539,39 +484,9 @@ def main():
     if args.stats:
         return cmd_stats(args)
 
-    # 处理子命令
-    if args.command in ("list", "ls"):
-        return cmd_list(args)
-    if args.command in ("search", "s"):
-        return cmd_search(args)
-    if args.command in ("delete", "rm"):
-        return cmd_delete(args)
-    if args.command in ("resume", "r"):
-        return cmd_resume(args)
-    if args.command in ("open", "o"):
-        return cmd_open(args)
-    if args.command in ("handoff", "x"):
-        return cmd_handoff(args)
-    if args.command in ("review", "v"):
-        return cmd_review(args)
-    if args.command in ("reviewed", "rd"):
-        return cmd_reviewed(args)
-    if args.command in ("rechecked", "rv"):
-        return cmd_rechecked(args)
-    if args.command in ("unreview", "ru"):
-        return cmd_unreview(args)
-    if args.command in ("name", "rename", "n"):
-        return cmd_name(args)
-    if args.command == "stats":
-        return cmd_stats(args)
-    if args.command == "mcp":
-        return cmd_mcp(args)
-    if args.command in ("memory-sync", "ms"):
-        return cmd_memory_sync(args)
-    if args.command in ("memory-search", "mq"):
-        return cmd_memory_search(args)
-    if args.command in ("memory-status", "mt"):
-        return cmd_memory_status(args)
+    # 处理子命令（argparse set_defaults 路由）
+    if hasattr(args, "func"):
+        return args.func(args)
 
     # 无参数 → 启动 TUI
     tool_filter = _parse_tool_filter(args)

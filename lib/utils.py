@@ -1,8 +1,37 @@
 """共享工具函数"""
 
+import os
+import sys
 import unicodedata
 from datetime import datetime
 from pathlib import Path
+
+from .models import ToolType
+
+
+def _tool_slug(tool_type: ToolType) -> str:
+    if tool_type == ToolType.CLAUDE:
+        return "claude"
+    if tool_type == ToolType.CODEX:
+        return "codex"
+    if tool_type == ToolType.GEMINI:
+        return "gemini"
+    return tool_type.label.lower()
+
+
+def _default_state_dir() -> Path:
+    env = os.environ.get("CSM_STATE_DIR", "").strip()
+    if env:
+        return Path(os.path.expanduser(env))
+
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "claude-session-manager"
+
+    xdg = os.environ.get("XDG_STATE_HOME", "").strip()
+    if xdg:
+        return Path(os.path.expanduser(xdg)) / "claude-session-manager"
+
+    return Path.home() / ".local" / "state" / "claude-session-manager"
 
 
 def display_width(text: str) -> int:

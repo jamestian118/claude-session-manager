@@ -42,3 +42,21 @@ def test_ts_to_str_short_project_and_format_session_line(monkeypatch) -> None:
     assert "[Claude Code]R" in tag_meta
     assert "~/work/a" in tag_meta
     assert display.startswith("阶段4 | first line")
+
+
+def test_tool_slug_maps_known_tools() -> None:
+    assert utils._tool_slug(ToolType.CLAUDE) == "claude"
+    assert utils._tool_slug(ToolType.CODEX) == "codex"
+    assert utils._tool_slug(ToolType.GEMINI) == "gemini"
+
+
+def test_default_state_dir_prefers_env(monkeypatch) -> None:
+    monkeypatch.setenv("CSM_STATE_DIR", "~/tmp-csm-state")
+    assert str(utils._default_state_dir()).endswith("tmp-csm-state")
+
+
+def test_default_state_dir_uses_xdg_on_non_darwin(monkeypatch) -> None:
+    monkeypatch.delenv("CSM_STATE_DIR", raising=False)
+    monkeypatch.setenv("XDG_STATE_HOME", "/tmp/xdg-state")
+    monkeypatch.setattr(utils.sys, "platform", "linux")
+    assert str(utils._default_state_dir()) == "/tmp/xdg-state/claude-session-manager"

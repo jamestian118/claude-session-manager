@@ -9,7 +9,7 @@ from mcp.server.fastmcp import FastMCP
 
 from . import local_memory
 from . import store
-from .models import ToolType
+from .models import SessionSummary, ToolType
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +76,24 @@ def _run_tool_with_logging(tool_name: str, fn):
             e,
         )
         raise
+
+
+def _resolve_single_session(tool_type: ToolType, session_id: str) -> tuple[SessionSummary | None, str | None]:
+    sid = (session_id or "").strip()
+    if not sid:
+        return None, "session_id 不能为空"
+
+    sessions = store.load_sessions(tool_type)
+    exact = [s for s in sessions if s.session_id == sid]
+    if len(exact) == 1:
+        return exact[0], None
+
+    matches = [s for s in sessions if s.session_id.startswith(sid)]
+    if not matches:
+        return None, f"找不到会话: {sid}"
+    if len(matches) > 1:
+        return None, f"短 ID '{sid}' 匹配到多个会话，请提供更长的 ID"
+    return matches[0], None
 
 
 @mcp.tool(description="列出会话。可按工具筛选（claude/codex/gemini），默认返回最近 20 个。")
@@ -146,23 +164,16 @@ def get_session_context(session_id: str, tool_type: str) -> dict:
 def get_handoff_snapshot(session_id: str, tool_type: str) -> dict:
     def _impl() -> dict:
         from .integration import find_handoff_snapshot
-        from .models import SessionSummary
 
         tt = _tool_type_from_str(tool_type)
         if not tt:
             return {"error": f"未知工具类型: {tool_type}，可选: claude/codex/gemini"}
 
-        # 构造最小 SessionSummary 用于查找快照
-        dummy = SessionSummary(
-            session_id=session_id,
-            project="",
-            first_display="",
-            last_display="",
-            timestamp_start=0,
-            timestamp_end=0,
-            tool_type=tt,
-        )
-        snap = find_handoff_snapshot(dummy)
+        session, err = _resolve_single_session(tt, session_id)
+        if not session:
+            return {"error": err or f"找不到会话: {session_id}"}
+
+        snap = find_handoff_snapshot(session)
         if not snap:
             return {"error": "找不到 handoff 快照文件"}
 
