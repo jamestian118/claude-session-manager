@@ -12,6 +12,9 @@ dependencies = [
   "mcp>=1.26.0,<2",
 ]
 
+[project.scripts]
+csm = "csm:main"
+
 [tool.setuptools]
 py-modules = ["csm"]
 
