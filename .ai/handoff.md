@@ -562,6 +562,6 @@ PY
 关键输出:
 - `[secrets-check] OK`
 
-## 当前状态：[Phase 7 CSM lane（7.2/7.6/7.10）已完成，验证通过；待提交记录 commit SHA]
-## 下一步：[提交当前分支并回传 SHA；若需要可补充 CI badge/branch protection 对齐]
+## 当前状态：[Phase 7 CSM lane（7.2/7.6/7.10）已完成，验证通过并已提交 `aeaa484b2417e0d3f6029cce5580f38dab21ef56`]
+## 下一步：[如需线上 gate 对齐，可补充 CI badge/branch protection；本地最小验收命令保持 `./scripts/verify && ./scripts/secrets-check`]
 ## 已知问题：[CI 新增为 workflow 层校验，本地 `scripts/verify` 仍未集成 ruff（当前按任务要求仅在 CI 执行 ruff）]
