@@ -1,5 +1,7 @@
 """Claude Code provider — 从 ~/.claude/ 读取会话数据"""
 
+from __future__ import annotations
+
 import json
 import os
 import re

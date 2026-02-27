@@ -1,5 +1,7 @@
 """数据层 — 聚合调度，统一管理多工具会话"""
 
+from __future__ import annotations
+
 from collections import defaultdict
 import logging
 

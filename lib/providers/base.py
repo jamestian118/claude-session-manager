@@ -1,5 +1,7 @@
 """Provider 抽象基类"""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 from ..models import ToolType, SessionSummary, SessionDetail

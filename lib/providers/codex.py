@@ -1,5 +1,7 @@
 """Codex CLI provider — 从 ~/.codex/ 读取会话数据"""
 
+from __future__ import annotations
+
 import json
 import logging
 import os

@@ -12,6 +12,12 @@ dependencies = [
   "mcp>=1.26.0,<2",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.4.0,<9",
+  "pytest-cov>=7.0.0,<8",
+]
+
 [project.scripts]
 csm = "csm:main"
 
@@ -28,3 +34,6 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

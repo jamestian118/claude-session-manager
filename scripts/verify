@@ -3,3 +3,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 python3 -m py_compile csm.py lib/*.py lib/providers/*.py
 printf '[verify] csm py_compile OK\n'
+python3 -m pytest -q tests \
+  --cov=lib.store \
+  --cov=lib.session_flags \
+  --cov=lib.utils \
+  --cov=lib.local_memory \
+  --cov-report=term-missing \
+  --cov-fail-under=60
+printf '[verify] pytest coverage gate OK (>=60%%)\n'

@@ -1,5 +1,7 @@
 """Gemini CLI provider — 从 ~/.gemini/ 读取会话数据（受限支持）"""
 
+from __future__ import annotations
+
 import re
 import shutil
 from pathlib import Path

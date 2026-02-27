@@ -360,3 +360,65 @@ PY
 
 ### Note
 - 当前环境默认 Python 3.9 路径运行 `csm` 仍可能触发运行期类型注解兼容问题；Gate 3 实测使用 Python 3.11 wrapper 通过。
+
+## 2026-02-27 Phase 4.1-4.3：测试框架与覆盖率门禁
+
+### Goal / DoD
+- Goal:
+  - 建立 `tests/` + pytest 框架。
+  - 覆盖 `store.search_sessions`、`session_flags` auto-reset、`utils` CJK 宽度、`local_memory` CRUD。
+  - 增加 provider 对损坏 JSONL 的容错测试。
+  - 让 `./scripts/verify` 可执行并包含 coverage gate（`>=60%`）。
+- DoD:
+  - `./scripts/verify` pass。
+  - `./scripts/secrets-check` pass。
+  - handoff 更新包含命令和关键输出。
+
+### Repo State
+- branch: `ai/20260227-phase0-upgrade`
+- scope: `/Users/Zhuanz/Documents/Code/claude-session-manager`
+- key files:
+  - `tests/test_store_search_sessions.py`
+  - `tests/test_session_flags.py`
+  - `tests/test_utils_cjk.py`
+  - `tests/test_local_memory.py`
+  - `tests/test_provider_jsonl_tolerance.py`
+  - `scripts/verify`
+  - `docs/verify.usage.zh-en.md`
+  - `pyproject.toml`
+  - `lib/providers/{base,claude,codex,gemini}.py`
+  - `lib/store.py`
+
+### Verification（命令 + 关键输出）
+1. strict policy stack
+```bash
+/Users/Zhuanz/Documents/Code/universal-harness-kit/scripts/agent-policy-stack --tool codex --cwd "$PWD" --strict --strict-profile harness
+```
+关键输出:
+- `strict_result=pass`
+
+2. verify
+```bash
+./scripts/verify
+```
+关键输出:
+- `[verify] csm py_compile OK`
+- `12 passed`
+- `TOTAL ... 75%`
+- `Required test coverage of 60% reached. Total coverage: 74.67%`
+- `[verify] pytest coverage gate OK (>=60%)`
+
+3. secrets-check
+```bash
+./scripts/secrets-check
+```
+关键输出:
+- `[secrets-check] OK`
+
+### Notes
+- 为兼容当前环境 `python3=3.9`，补充了 `from __future__ import annotations` 到 `lib/store.py` 与 provider 基类/实现文件，避免 `X | None` 注解在 import 阶段触发 `TypeError`。
+- `scripts/verify` 新增 pytest+coverage 门禁，并同步新增双语说明文档 `docs/verify.usage.zh-en.md`。
+
+## 当前状态：[Phase 4.1-4.3 已完成；测试框架与覆盖率门禁已落地，关键文件见上方 key files]
+## 下一步：[按需扩展 provider 细粒度异常分支测试；最小验收命令 `./scripts/verify && ./scripts/secrets-check`]
+## 已知问题：[当前 shell policy 拦截 `rm -f .coverage`；不影响 verify/secrets-check 与提交，可通过不纳入 git 暂避]
