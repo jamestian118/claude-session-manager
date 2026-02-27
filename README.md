@@ -145,6 +145,9 @@ python csm.py mcp
 - 兼容旧路径（手动运行 watcher 的默认输出）：
   - `~/Documents/Code/cli-handoff-bundle/_handoff/sessions/<tool>-<session_id>.md`
 
+快照结构契约（与 OMO 共享）：
+- `CHB_ROOT="${CHB_ROOT:-$HOME/Documents/Code/cli-handoff-bundle}"`，参考 `$CHB_ROOT/docs/snapshot-schema.md`
+
 你也可以用环境变量覆盖/追加全局根目录（多个用 `:` 分隔）：
 ```bash
 export CSM_HANDOFF_ROOTS="$HOME/Library/Application Support/cli-handoff-bundle/_handoff:$HOME/Documents/Code/cli-handoff-bundle/_handoff"
@@ -476,6 +479,9 @@ Default search order:
   - `~/Library/Application Support/cli-handoff-bundle/_handoff/sessions/<tool>-<session_id>.md`
 - Legacy/manual root:
   - `~/Documents/Code/cli-handoff-bundle/_handoff/sessions/<tool>-<session_id>.md`
+
+Snapshot contract shared with OMO:
+- `CHB_ROOT="${CHB_ROOT:-$HOME/Documents/Code/cli-handoff-bundle}"`, see `$CHB_ROOT/docs/snapshot-schema.md`
 
 Override/extend global roots with `CSM_HANDOFF_ROOTS` (colon-separated):
 ```bash
